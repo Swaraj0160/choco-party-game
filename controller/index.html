@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CHOCO Controller</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Join Screen -->
+        <div id="screen-join" class="screen active">
+            <h1>CHOCO</h1>
+            <div class="input-group">
+                <input type="text" id="player-name" placeholder="Enter your name" maxlength="12">
+            </div>
+            <button id="btn-join" class="btn primary">JOIN PARTY</button>
+        </div>
+
+        <!-- Lobby Screen -->
+        <div id="screen-lobby" class="screen">
+            <h2 id="lobby-greeting">Hey, Player!</h2>
+            <div class="status-indicator" id="player-color-indicator"></div>
+            <p>Wait for other players...</p>
+            <button id="btn-ready" class="btn">I'M READY</button>
+        </div>
+
+        <!-- Playing Screen -->
+        <div id="screen-playing" class="screen">
+            <div class="controller-layout">
+                <div class="dpad">
+                    <button class="dpad-btn up" data-action="up">▲</button>
+                    <button class="dpad-btn left" data-action="left">◀</button>
+                    <button class="dpad-btn right" data-action="right">▶</button>
+                    <button class="dpad-btn down" data-action="down">▼</button>
+                </div>
+                <div class="action-buttons">
+                    <button class="action-btn" data-action="action">ACTION</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="js/app.js"></script>
+</body>
+</html>

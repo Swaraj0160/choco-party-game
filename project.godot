@@ -1,0 +1,35 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="CHOCO"
+run/main_scene="res://src/core/Boot.tscn"
+config/features=PackedStringArray("4.3", "Forward Plus")
+boot_splash/show_image=false
+config/icon="res://icon.svg"
+
+[autoload]
+
+NetworkManager="*res://src/network/NetworkManager.gd"
+GameManager="*res://src/core/GameManager.gd"
+ServerManager="*res://src/network/ServerManager.gd"
+RhythmClock="*res://src/rhythm/RhythmClock.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+
+[rendering]
+
+environment/defaults/default_clear_color=Color(0.05, 0.05, 0.08, 1)

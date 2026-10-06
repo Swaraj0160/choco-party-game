@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CHOCO | Controller</title>
+    <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
+    <style>
+        :root { --bg: #050508; --card: #111116; --primary: #5AC8FA; --danger: #FF3B30; --success: #4CD964; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+        body { background: var(--bg); color: white; display: flex; flex-direction: column; height: 100vh; overflow: hidden; position: fixed; width: 100%; }
+        
+        .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .screen.active { display: flex; }
+        
+        /* Join Screen */
+        #screen-join { background: radial-gradient(circle at top right, rgba(90,200,250,0.2), transparent 50%); }
+        .logo { font-size: 3rem; font-weight: 900; letter-spacing: 5px; margin-bottom: 2rem; text-align: center; }
+        
+        .input-group { width: 100%; max-width: 320px; margin-bottom: 1.5rem; }
+        .input-group label { display: block; font-size: 0.8rem; font-weight: bold; color: #888; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px; }
+        input { width: 100%; padding: 1.2rem; font-size: 1.2rem; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.1); border-radius: 12px; color: white; outline: none; transition: border-color 0.3s; text-align: center; font-weight: bold; }
+        input:focus { border-color: var(--primary); }
+        
+        button { width: 100%; max-width: 320px; padding: 1.2rem; font-size: 1.2rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; background: var(--primary); color: #000; border: none; border-radius: 12px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 10px 20px rgba(90,200,250,0.3); margin-top: 1rem; }
+        button:active { transform: scale(0.95); box-shadow: 0 5px 10px rgba(90,200,250,0.3); }
+        
+        /* Lobby Screen */
+        .player-identity { text-align: center; margin-bottom: 3rem; }
+        .avatar-circle { width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 1.5rem auto; border: 4px solid var(--primary); box-shadow: 0 0 30px rgba(90,200,250,0.4); background: url('assets/fighter_1.jpg') center/cover; }
+        .player-name { font-size: 2rem; font-weight: 900; margin-bottom: 0.5rem; }
+        .player-id { font-size: 1rem; color: #aaa; font-weight: bold; letter-spacing: 2px; }
+        
+        /* Game Screen */
+        #screen-play { justify-content: space-between; padding: 0; }
+        
+        .game-header { width: 100%; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .stat { text-align: center; }
+        .stat-label { font-size: 0.7rem; color: #888; font-weight: bold; letter-spacing: 1px; }
+        .stat-value { font-size: 1.5rem; font-weight: 900; }
+        
+        .controller-area { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; padding: 2rem; position: relative; }
+        
+        .hit-btn { 
+            width: 80vw; height: 80vw; max-width: 350px; max-height: 350px; 
+            border-radius: 50%; border: 4px solid var(--primary);
+            background: radial-gradient(circle at center, rgba(90,200,250,0.2) 0%, transparent 70%);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 3rem; font-weight: 900; color: var(--primary); text-shadow: 0 0 20px var(--primary);
+            box-shadow: 0 0 50px rgba(90,200,250,0.2), inset 0 0 30px rgba(90,200,250,0.1);
+            transition: transform 0.1s; cursor: pointer;
+        }
+        .hit-btn:active { transform: scale(0.9); background: rgba(90,200,250,0.4); }
+        
+        .player-color-bar { width: 100%; height: 10px; position: absolute; top: 0; left: 0; transition: background 0.5s; z-index: 100; }
+    </style>
+</head>
+<body>
+    <div class="player-color-bar" id="color-bar"></div>
+    
+    <div id="screen-join" class="screen active">
+        <div class="logo">CHOCO</div>
+        <div class="input-group">
+            <label>Room Code</label>
+            <input type="text" id="room-code" placeholder="4-LETTER CODE" maxlength="4" style="text-transform: uppercase;">
+        </div>
+        <div class="input-group">
+            <label>Nickname</label>
+            <input type="text" id="player-name" placeholder="YOUR NAME" maxlength="12">
+        </div>
+        <button id="btn-join" onclick="joinRoom()">JOIN PARTY</button>
+        <div id="error-msg" style="margin-top: 1.5rem; color: var(--danger); font-size: 0.9rem; font-weight:bold; text-align: center;"></div>
+    </div>
+    
+    <div id="screen-lobby" class="screen">
+        <div class="player-identity">
+            <div class="avatar-circle" id="player-avatar"></div>
+            <div class="player-name" id="display-name">PLAYER</div>
+            <div class="player-id" id="display-id">P1</div>
+        </div>
+        <button id="btn-ready" onclick="toggleReady()" style="background: var(--success); box-shadow: 0 10px 20px rgba(76,217,100,0.3);">TAP TO READY</button>
+    </div>
+    
+    <div id="screen-play" class="screen">
+        <div class="game-header">
+            <div class="stat">
+                <div class="stat-label">SCORE</div>
+                <div class="stat-value" id="ui-score">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">COMBO</div>
+                <div class="stat-value" id="ui-combo" style="color:var(--success)">0</div>
+            </div>
+        </div>
+        <div class="controller-area">
+            <div class="hit-btn" id="btn-hit" ontouchstart="sendAction(event)" onmousedown="sendAction(event)">HIT</div>
+        </div>
+    </div>
+
+    <script>
+        let peer;
+        let conn;
+        let myColor = '#5AC8FA';
+        let isReady = false;
+        
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+        
+        // Auto-fill code from URL if present
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('room')) {
+            document.getElementById('room-code').value = urlParams.get('room');
+        }
+        
+        function joinRoom() {
+            const code = document.getElementById('room-code').value.toUpperCase();
+            const name = document.getElementById('player-name').value || 'PLAYER';
+            if (code.length !== 4) { document.getElementById('error-msg').innerText = 'Enter a 4-letter code'; return; }
+            
+            document.getElementById('btn-join').innerText = 'CONNECTING...';
+            document.getElementById('error-msg').innerText = '';
+            
+            peer = new Peer();
+            
+            peer.on('open', (id) => {
+                conn = peer.connect('choco-room-' + code);
+                
+                conn.on('open', () => {
+                    showScreen('screen-lobby');
+                    document.getElementById('display-name').innerText = name;
+                });
+                
+                conn.on('data', (data) => {
+                    if (data.type === 'welcome') {
+                        document.getElementById('display-id').innerText = 'PLAYER ' + data.id;
+                        myColor = data.color;
+                        document.getElementById('color-bar').style.background = myColor;
+                        document.getElementById('player-avatar').style.borderColor = myColor;
+                        document.getElementById('btn-hit').style.borderColor = myColor;
+                        document.getElementById('btn-hit').style.color = myColor;
+                    } else if (data.type === 'game_start') {
+                        showScreen('screen-play');
+                        if (navigator.vibrate) navigator.vibrate(200);
+                    }
+                });
+                
+                conn.on('close', () => {
+                    alert('Host disconnected');
+                    window.location.reload();
+                });
+            });
+            
+            peer.on('error', (err) => {
+                document.getElementById('error-msg').innerText = 'Connection failed. Check room code.';
+                document.getElementById('btn-join').innerText = 'JOIN PARTY';
+            });
+        }
+        
+        function toggleReady() {
+            if (!conn) return;
+            isReady = !isReady;
+            const btn = document.getElementById('btn-ready');
+            
+            if (isReady) {
+                btn.innerText = 'READY!';
+                btn.style.background = '#333';
+                btn.style.color = '#fff';
+                btn.style.boxShadow = 'none';
+            } else {
+                btn.innerText = 'TAP TO READY';
+                btn.style.background = 'var(--success)';
+                btn.style.color = '#000';
+                btn.style.boxShadow = '0 10px 20px rgba(76,217,100,0.3)';
+            }
+            
+            if (navigator.vibrate) navigator.vibrate(50);
+            
+            conn.send({ type: 'ready', name: document.getElementById('player-name').value || 'PLAYER' });
+        }
+        
+        function sendAction(e) {
+            e.preventDefault();
+            if (!conn) return;
+            if (navigator.vibrate) navigator.vibrate(40);
+            
+            conn.send({ type: 'action', action: 'hit', timestamp: Date.now() });
+        }
+        
+        document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+    </script>
+</body>
+</html>

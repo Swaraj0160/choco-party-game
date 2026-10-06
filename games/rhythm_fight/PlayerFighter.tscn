@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://cx6g0q2b8f9b"]
+
+[ext_resource type="Script" path="res://games/rhythm_fight/PlayerFighter.gd" id="1_pf"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
+radius = 0.5
+height = 2.0
+
+[node name="PlayerFighter" type="Node3D"]
+script = ExtResource("1_pf")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("CapsuleMesh_1")

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHOCO | One Screen. Everyone Plays.</title>
+    <link rel="icon" type="image/png" href="assets/fighter_1.jpg">
+    <style>
+        :root {
+            --bg-dark: #050508;
+            --bg-card: #111116;
+            --primary: #5AC8FA;
+            --primary-glow: rgba(90, 200, 250, 0.4);
+            --danger: #FF3B30;
+            --warning: #FFCC00;
+            --success: #4CD964;
+            --text-main: #FFFFFF;
+            --text-muted: #888899;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, sans-serif; }
+        body { background: var(--bg-dark); color: var(--text-main); overflow-x: hidden; }
+        
+        /* Navigation */
+        .nav {
+            position: fixed; top: 0; left: 0; right: 0;
+            padding: 1.5rem 4rem;
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(5, 5, 8, 0.8); backdrop-filter: blur(20px);
+            z-index: 100; border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .nav-logo { font-size: 2rem; font-weight: 900; letter-spacing: 4px; text-decoration: none; color: white; }
+        
+        .nav-links { display: flex; gap: 2rem; align-items: center; }
+        .nav-links a { color: var(--text-muted); text-decoration: none; font-weight: 600; font-size: 0.9rem; letter-spacing: 1px; transition: color 0.2s; }
+        .nav-links a:hover { color: white; }
+        
+        .nav-actions { display: flex; gap: 1rem; }
+        
+        /* Buttons */
+        .btn {
+            padding: 1rem 2rem; font-size: 1rem; font-weight: 900; border-radius: 12px;
+            text-decoration: none; text-transform: uppercase; letter-spacing: 2px;
+            cursor: pointer; border: none; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: inline-flex; align-items: center; justify-content: center;
+        }
+        
+        .btn-primary { background: var(--primary); color: #000; box-shadow: 0 10px 30px var(--primary-glow), inset 0 2px 10px rgba(255,255,255,0.5); }
+        .btn-primary:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(90, 200, 250, 0.6), inset 0 2px 10px rgba(255,255,255,0.5); }
+        
+        .btn-outline { background: transparent; color: white; border: 2px solid rgba(255,255,255,0.2); }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-3px); }
+        
+        /* Hero */
+        .hero { 
+            min-height: 100vh; display: flex; align-items: center; 
+            padding: 8rem 4rem 4rem 4rem; position: relative;
+        }
+        
+        .hero-bg {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: url('assets/hero_bg.jpg') center/cover;
+            opacity: 0.4; z-index: -1;
+            mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+        }
+        
+        .hero-content { flex: 1; max-width: 650px; z-index: 1; }
+        
+        .hero-visual { flex: 1.2; display: flex; justify-content: flex-end; position: relative; z-index: 1; perspective: 1000px; }
+        .hero-visual img { 
+            max-width: 100%; border-radius: 24px; 
+            transform: rotateY(-10deg) rotateX(5deg);
+            box-shadow: -20px 20px 60px rgba(0,0,0,0.8), 0 0 50px var(--primary-glow);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: transform 0.5s ease;
+        }
+        .hero-visual img:hover { transform: rotateY(0deg) rotateX(0deg) scale(1.02); }
+        
+        .eyebrow { color: var(--primary); font-weight: 800; letter-spacing: 4px; margin-bottom: 1rem; display: block; }
+        h1 { font-size: 5.5rem; font-weight: 900; letter-spacing: 2px; line-height: 1.1; margin-bottom: 1.5rem; }
+        .gradient-text { background: linear-gradient(135deg, #fff, #888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .hero p { font-size: 1.4rem; color: var(--text-muted); margin-bottom: 3rem; line-height: 1.6; max-width: 500px; }
+        
+        /* How It Works */
+        .section { padding: 8rem 4rem; max-width: 1400px; margin: 0 auto; }
+        .section-header { text-align: center; margin-bottom: 5rem; }
+        .section-header h2 { font-size: 3.5rem; font-weight: 900; margin-bottom: 1rem; }
+        .section-header p { color: var(--text-muted); font-size: 1.2rem; }
+        
+        .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3rem; }
+        .step { text-align: center; padding: 3rem; background: var(--bg-card); border-radius: 24px; border: 1px solid rgba(255,255,255,0.05); }
+        .step-number { width: 60px; height: 60px; background: rgba(90, 200, 250, 0.1); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 900; margin: 0 auto 2rem auto; }
+        .step h3 { font-size: 1.5rem; margin-bottom: 1rem; }
+        .step p { color: var(--text-muted); line-height: 1.6; }
+        
+        /* Game Cards */
+        .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 2.5rem; }
+        .game-card {
+            background: var(--bg-card); border-radius: 20px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05); transition: all 0.3s ease;
+            display: flex; flex-direction: column; cursor: pointer; text-decoration: none;
+        }
+        .game-card:hover { transform: translateY(-10px); border-color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 20px var(--primary-glow); }
+        .game-card .img-wrapper { position: relative; overflow: hidden; padding-top: 60%; }
+        .game-card img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+        .game-card:hover img { transform: scale(1.05); }
+        
+        .game-meta { position: absolute; top: 1rem; right: 1rem; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); padding: 0.5rem 1rem; border-radius: 30px; font-size: 0.8rem; font-weight: 800; border: 1px solid rgba(255,255,255,0.1); }
+        
+        .game-info { padding: 2rem; flex: 1; display: flex; flex-direction: column; }
+        .game-info h3 { font-size: 1.8rem; font-weight: 900; margin-bottom: 0.5rem; color: white; }
+        .game-info p { color: var(--text-muted); line-height: 1.5; margin-bottom: 1.5rem; flex: 1; }
+        
+        .play-link { color: var(--primary); font-weight: 800; font-size: 0.9rem; letter-spacing: 1px; display: flex; align-items: center; gap: 0.5rem; margin-top: auto; }
+        .game-card:hover .play-link { color: white; }
+        
+        /* Footer */
+        footer { padding: 4rem; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 4rem; color: var(--text-muted); }
+        
+        @media (max-width: 1024px) {
+            .hero { flex-direction: column; text-align: center; padding: 8rem 2rem 2rem 2rem; }
+            .hero-content { margin-bottom: 4rem; }
+            .hero p { margin: 0 auto 3rem auto; }
+            .nav { padding: 1.5rem 2rem; }
+            .nav-links { display: none; }
+            .steps { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <a href="#" class="nav-logo">CHOCO</a>
+        <div class="nav-links">
+            <a href="#how">HOW IT WORKS</a>
+            <a href="#games">GAMES</a>
+            <a href="#features">FEATURES</a>
+        </div>
+        <div class="nav-actions">
+            <a href="join.html" class="btn btn-outline" style="padding: 0.8rem 1.5rem;">JOIN</a>
+            <a href="host.html" class="btn btn-primary" style="padding: 0.8rem 1.5rem;">HOST GAME</a>
+        </div>
+    </nav>
+    
+    <div class="hero">
+        <div class="hero-bg"></div>
+        <div class="hero-content">
+            <span class="eyebrow">YOUR PHONE. YOUR CONTROLLER.</span>
+            <h1>ONE SCREEN.<br><span class="gradient-text">EVERYONE PLAYS.</span></h1>
+            <p>Gather your friends, scan the QR code with your phone, and instantly battle on the big screen. No apps to download. Zero friction.</p>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <a href="host.html" class="btn btn-primary">CREATE PARTY</a>
+                <a href="#games" class="btn btn-outline">VIEW GAMES</a>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <img src="assets/hero_arena.jpg" alt="CHOCO Rhythm Fight Arena">
+        </div>
+    </div>
+    
+    <div class="section" id="how">
+        <div class="section-header">
+            <h2>HOW IT WORKS</h2>
+            <p>From zero to playing in under 10 seconds.</p>
+        </div>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>HOST A GAME</h3>
+                <p>Click "Create Party" on your laptop or TV browser. A unique Room Code and QR will appear.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>SCAN TO JOIN</h3>
+                <p>Friends scan the QR code with their smartphone camera. No app installation required.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>PLAY TOGETHER</h3>
+                <p>Phones instantly become custom controllers. The laptop becomes the shared cinematic game screen.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section" id="games">
+        <div class="section-header">
+            <h2>GAME MODES</h2>
+            <p>A growing collection of premium party experiences.</p>
+        </div>
+        <div class="games-grid">
+            <a href="host.html" class="game-card">
+                <div class="img-wrapper">
+                    <img src="assets/hero_arena.jpg" alt="Beat Brawl">
+                    <div class="game-meta" style="color:var(--success)">2-5 PLAYERS</div>
+                </div>
+                <div class="game-info">
+                    <h3>CHOCO // BEAT BRAWL</h3>
+                    <p>The flagship Rhythm-Fighter. Tap, hold, and swipe on your phone to the beat of the music to unleash devastating combos on the main screen.</p>
+                    <div class="play-link">HOST MODE →</div>
+                </div>
+            </a>
+            
+            <a href="host.html" class="game-card">
+                <div class="img-wrapper">
+                    <img src="assets/card_chaos_arena.jpg" alt="Chaos Arena">
+                    <div class="game-meta" style="color:var(--warning)">2-8 PLAYERS</div>
+                </div>
+                <div class="game-info">
+                    <h3>CHAOS ARENA</h3>
+                    <p>A frantic physics brawler on a crumbling platform. Use momentum and items to knock your friends into the void. Last player standing wins.</p>
+                    <div class="play-link">HOST MODE →</div>
+                </div>
+            </a>
+            
+            <a href="host.html" class="game-card">
+                <div class="img-wrapper">
+                    <img src="assets/card_rocket_rush.jpg" alt="Rocket Rush">
+                    <div class="game-meta" style="color:var(--primary)">4-8 PLAYERS</div>
+                </div>
+                <div class="game-info">
+                    <h3>ROCKET RUSH</h3>
+                    <p>High-speed futuristic racing. Tilt your phone to steer your glowing rocket through neon tunnels while avoiding obstacles and sabotaging rivals.</p>
+                    <div class="play-link">HOST MODE →</div>
+                </div>
+            </a>
+            
+            <a href="host.html" class="game-card">
+                <div class="img-wrapper">
+                    <img src="assets/card_secret_saboteur.jpg" alt="Secret Saboteur">
+                    <div class="game-meta" style="color:var(--danger)">5-8 PLAYERS</div>
+                </div>
+                <div class="game-info">
+                    <h3>SECRET SABOTEUR</h3>
+                    <p>Work together on the main screen to fix the facility. But beware—your phone privately reveals if you are the imposter sent to destroy it.</p>
+                    <div class="play-link">HOST MODE →</div>
+                </div>
+            </a>
+            
+            <a href="host.html" class="game-card">
+                <div class="img-wrapper">
+                    <img src="assets/card_reaction_rush.jpg" alt="Reaction Rush">
+                    <div class="game-meta" style="color:var(--primary)">2-8 PLAYERS</div>
+                </div>
+                <div class="game-info">
+                    <h3>REACTION RUSH</h3>
+                    <p>Pure tension. Wait for the signal on the big screen, then tap your phone as fast as humanly possible to strike first in this quick-draw showdown.</p>
+                    <div class="play-link">HOST MODE →</div>
+                </div>
+            </a>
+            
+            <a href="host.html" class="game-card">
+                <div class="img-wrapper">
+                    <img src="assets/card_team_machine.jpg" alt="Team Machine">
+                    <div class="game-meta" style="color:var(--warning)">4-8 PLAYERS</div>
+                </div>
+                <div class="game-info">
+                    <h3>TEAM MACHINE</h3>
+                    <p>Co-op chaos. Each player's phone controls a different part of a massive mechanical weapon. Communicate to pilot, aim, load, and fire effectively.</p>
+                    <div class="play-link">HOST MODE →</div>
+                </div>
+            </a>
+            
+            <a href="host.html" class="game-card">
+                <div class="img-wrapper">
+                    <img src="assets/card_physics_panic.jpg" alt="Physics Panic">
+                    <div class="game-meta" style="color:var(--success)">2-8 PLAYERS</div>
+                </div>
+                <div class="game-info">
+                    <h3>PHYSICS PANIC</h3>
+                    <p>Survive a barrage of giant swinging pendulums, bouncy objects, and zero-gravity zones in a completely unpredictable physics playground.</p>
+                    <div class="play-link">HOST MODE →</div>
+                </div>
+            </a>
+        </div>
+    </div>
+    
+    <footer>
+        <div style="font-size: 1.5rem; font-weight: 900; letter-spacing: 2px; color: white; margin-bottom: 1rem;">CHOCO</div>
+        <p>A WebRTC Powered Open-Source Multiplayer Party Game.</p>
+    </footer>
+</body>
+</html>

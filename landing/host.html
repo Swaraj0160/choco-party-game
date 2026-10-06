@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHOCO | Host Game</title>
+    <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
+    <style>
+        :root {
+            --bg: #050508; --primary: #5AC8FA; --primary-glow: rgba(90,200,250,0.5);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: white; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
+        
+        #lobby {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: linear-gradient(rgba(5,5,8,0.8), rgba(5,5,8,0.9)), url('assets/hero_bg.jpg') center/cover;
+            position: relative; animation: bgPan 30s linear infinite;
+        }
+        @keyframes bgPan { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        
+        .lobby-header { position: absolute; top: 40px; left: 60px; font-size: 2.5rem; font-weight: 900; letter-spacing: 5px; }
+        
+        .join-panel {
+            background: rgba(17,17,22,0.8); backdrop-filter: blur(20px);
+            padding: 3rem; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1);
+            text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+            margin-bottom: 4rem; display: flex; gap: 4rem; align-items: center;
+        }
+        
+        .room-info h2 { font-size: 1.5rem; color: #888; font-weight: 800; letter-spacing: 2px; margin-bottom: 0.5rem; text-transform: uppercase;}
+        .room-code { font-size: 7rem; font-weight: 900; letter-spacing: 10px; color: var(--primary); text-shadow: 0 0 40px var(--primary-glow); margin-bottom: 1rem; line-height: 1; }
+        .join-url { font-size: 1.5rem; color: white; background: rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 10px; font-family: monospace; }
+        
+        .qr-placeholder {
+            width: 220px; height: 220px; background: white; border-radius: 16px; padding: 10px;
+            box-shadow: 0 0 30px rgba(255,255,255,0.2);
+        }
+        .qr-placeholder img { width: 100%; height: 100%; }
+        
+        #players { display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center; min-height: 250px; }
+        
+        .player-slot {
+            width: 180px; height: 240px; background: rgba(255,255,255,0.05);
+            border: 2px dashed rgba(255,255,255,0.2); border-radius: 20px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 1.5rem; font-weight: bold; color: #555; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .player-slot.active {
+            border-style: solid; border-width: 4px; color: white;
+            background: rgba(255,255,255,0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            transform: translateY(-15px) scale(1.05);
+        }
+        
+        .player-avatar {
+            width: 100px; height: 100px; border-radius: 50%; background: #333; margin-bottom: 1rem;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+        
+        .ready-badge {
+            background: #888; color: white; font-size: 0.9rem; padding: 5px 15px; border-radius: 20px; margin-top: 15px; font-weight: 900; letter-spacing: 1px; transition: background 0.3s;
+        }
+        .ready-badge.is-ready { background: #4CD964; box-shadow: 0 0 15px rgba(76,217,100,0.5); }
+        
+        #game-container {
+            display: none; flex: 1; background: url('assets/hero_bg.jpg') center/cover; position: relative;
+        }
+        
+        .game-overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4);
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 4rem;
+        }
+        
+        #combat-stage {
+            display: flex; justify-content: space-around; width: 100%; max-width: 1400px;
+            margin-top: auto; margin-bottom: 50px; perspective: 1000px;
+        }
+        
+        .fighter {
+            width: 250px; height: 450px; background-size: cover; background-position: center;
+            border-radius: 24px; transition: transform 0.1s; position: relative;
+        }
+        
+        .fighter-ui {
+            position: absolute; bottom: -80px; left: 0; width: 100%; text-align: center;
+        }
+        .fighter-name { font-size: 1.5rem; font-weight: 900; color: white; margin-bottom: 5px; text-transform: uppercase; text-shadow: 0 2px 5px black; }
+        .fighter-score { font-size: 2rem; font-weight: 900; background: rgba(0,0,0,0.8); border-radius: 10px; padding: 5px; }
+        .fighter-combo { font-size: 1rem; font-weight: bold; color: #aaa; margin-top: 5px; }
+        
+        .hit-fx {
+            position: absolute; top: 30%; left: 50%; transform: translate(-50%, 0); font-size: 5rem; font-weight: 900; color: #FF3B30;
+            text-shadow: 0 0 30px rgba(0,0,0,0.8); pointer-events: none; opacity: 0;
+            transition: opacity 0.2s, transform 0.2s; z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div id="lobby">
+        <div class="lobby-header">CHOCO</div>
+        
+        <div class="join-panel">
+            <div class="room-info">
+                <h2 id="status">CONNECTING TO RELAY...</h2>
+                <div class="room-code" id="code-display">----</div>
+                <div class="join-url">landing-peach-eight-88.vercel.app/join.html</div>
+            </div>
+            <div class="qr-placeholder" id="qr-container"></div>
+        </div>
+        
+        <div id="players">
+            <!-- Player slots -->
+        </div>
+    </div>
+    
+    <div id="game-container">
+        <div class="game-overlay">
+            <h1 style="font-size: 5rem; margin-bottom: 2rem; color:#fff; text-shadow:0 0 20px #5AC8FA;">CHOCO // BEAT BRAWL</h1>
+            
+            <div id="rhythm-track" style="width:80%; height:10px; background:rgba(255,255,255,0.2); border-radius:5px; margin-bottom:2rem; position:relative; overflow:hidden;">
+                <div id="beat-bar" style="width:20px; height:100%; background:#5AC8FA; position:absolute; left:0; box-shadow:0 0 10px #5AC8FA;"></div>
+            </div>
+            
+            <h2 id="rhythm-status">FIGHT!</h2>
+            
+            <div id="combat-stage">
+                <!-- Fighters -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const colors = ['#5AC8FA', '#FF3B30', '#4CD964', '#FFCC00', '#FF2D55', '#AF52DE'];
+        const players = {};
+        let gameActive = false;
+        let beatPosition = 0;
+        
+        // Generate random 4 letter code
+        const code = Math.random().toString(36).substring(2, 6).toUpperCase();
+        document.getElementById('code-display').innerText = code;
+        
+        // Generate QR Code via qrserver API
+        const joinUrl = 'https://landing-peach-eight-88.vercel.app/join.html?room=' + code;
+        document.getElementById('qr-container').innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(joinUrl)}" alt="Join QR">`;
+        
+        // Init PeerJS
+        const peer = new Peer('choco-room-' + code);
+        
+        peer.on('open', (id) => {
+            document.getElementById('status').innerText = 'JOIN THE PARTY';
+        });
+        
+        peer.on('connection', (conn) => {
+            conn.on('open', () => {
+                const pId = Object.keys(players).length + 1;
+                const pColor = colors[(pId - 1) % colors.length];
+                
+                players[conn.peer] = {
+                    conn: conn, id: pId, color: pColor, ready: false, score: 0, combo: 0
+                };
+                
+                conn.send({ type: 'welcome', id: pId, color: pColor });
+                updateLobby();
+                
+                conn.on('data', (data) => { handleInput(conn.peer, data); });
+                conn.on('close', () => { delete players[conn.peer]; updateLobby(); });
+            });
+        });
+        
+        function updateLobby() {
+            if (gameActive) return;
+            const pDiv = document.getElementById('players');
+            pDiv.innerHTML = '';
+            
+            let allReady = true;
+            let count = 0;
+            
+            for (const peerId in players) {
+                const p = players[peerId];
+                count++;
+                if (!p.ready) allReady = false;
+                
+                const readyClass = p.ready ? 'is-ready' : '';
+                const readyText = p.ready ? 'READY' : 'WAITING';
+                
+                pDiv.innerHTML += `
+                    <div class="player-slot active" style="border-color: ${p.color}">
+                        <div class="player-avatar" style="background: url('assets/fighter_1.jpg') center/cover; border:3px solid ${p.color}"></div>
+                        <div style="color: white; font-size:1.2rem">${p.name || 'PLAYER '+p.id}</div>
+                        <div class="ready-badge ${readyClass}">${readyText}</div>
+                    </div>
+                `;
+            }
+            
+            if (count > 0 && allReady) {
+                setTimeout(startGame, 1000);
+            }
+        }
+        
+        function handleInput(peerId, data) {
+            const p = players[peerId];
+            if (!p) return;
+            
+            if (data.type === 'ready') {
+                p.ready = true; p.name = data.name; updateLobby();
+            } else if (data.type === 'action' && gameActive) {
+                // Rhythm evaluation logic
+                const beatTarget = 50; // Center of screen
+                const dist = Math.abs(beatPosition - beatTarget);
+                
+                let rating = 'MISS';
+                let pts = 0;
+                
+                if (dist < 5) { rating = 'PERFECT'; pts = 100; p.combo++; }
+                else if (dist < 15) { rating = 'GREAT'; pts = 50; p.combo++; }
+                else if (dist < 30) { rating = 'GOOD'; pts = 10; p.combo = 0; }
+                else { p.combo = 0; }
+                
+                p.score += pts;
+                showHit(p.id, rating, p.score, p.combo);
+            }
+        }
+        
+        function startGame() {
+            gameActive = true;
+            document.getElementById('lobby').style.display = 'none';
+            document.getElementById('game-container').style.display = 'flex';
+            
+            const stage = document.getElementById('combat-stage');
+            stage.innerHTML = '';
+            
+            for (const peerId in players) {
+                const p = players[peerId];
+                p.conn.send({ type: 'game_start' });
+                
+                stage.innerHTML += `
+                    <div class="fighter" id="fighter-${p.id}" style="background: url('assets/fighter_1.jpg') center/cover; border: 5px solid ${p.color}; box-shadow: 0 0 40px ${p.color}">
+                        <div class="fighter-ui">
+                            <div class="fighter-name">${p.name || 'P'+p.id}</div>
+                            <div class="fighter-score" style="color:${p.color}" id="score-${p.id}">0</div>
+                            <div class="fighter-combo" id="combo-${p.id}">COMBO 0</div>
+                        </div>
+                        <div class="hit-fx" id="fx-${p.id}"></div>
+                    </div>
+                `;
+            }
+            
+            // Start simple rhythm loop
+            setInterval(() => {
+                beatPosition += 2;
+                if (beatPosition > 100) beatPosition = 0;
+                document.getElementById('beat-bar').style.left = beatPosition + '%';
+            }, 30);
+        }
+        
+        function showHit(id, rating, score, combo) {
+            const f = document.getElementById(`fighter-${id}`);
+            const fx = document.getElementById(`fx-${id}`);
+            
+            const scoreEl = document.getElementById(`score-${id}`);
+            if(scoreEl) scoreEl.innerText = score;
+            
+            const comboEl = document.getElementById(`combo-${id}`);
+            if(comboEl) comboEl.innerText = 'COMBO ' + combo;
+            
+            if (f && fx) {
+                f.style.transform = 'scale(1.1) translateY(-20px)';
+                fx.innerText = rating;
+                
+                if (rating === 'PERFECT') fx.style.color = '#4CD964';
+                else if (rating === 'GREAT') fx.style.color = '#5AC8FA';
+                else if (rating === 'MISS') fx.style.color = '#FF3B30';
+                else fx.style.color = '#FFCC00';
+                
+                fx.style.opacity = '1';
+                fx.style.transform = 'translate(-50%, -50px)';
+                
+                setTimeout(() => {
+                    f.style.transform = 'scale(1) translateY(0)';
+                    fx.style.opacity = '0';
+                    fx.style.transform = 'translate(-50%, 0)';
+                }, 200);
+            }
+        }
+    </script>
+</body>
+</html>
